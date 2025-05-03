@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if ! test -d "private" || ! test -d "certs" || ! test -f "index.txt" || ! test -f "serial" || ! test -f "openssl.cnf.orig" || ! test -d "intermediate" ||  ! test -d "intermediate/private" || ! test -d "intermediate/certs" || ! test -f "intermediate/index.txt" || ! test -f "intermediate/serial" || ! test -f "intermediate/openssl.cnf.orig" ; then
+   echo "Directory structure is invalid";
+   exit; 
+fi
+
+read -p "Enter domain name: " domain
+
+openssl genrsa -out intermediate/private/$domain.key.pem 2048
+openssl req -config intermediate/openssl.cnf \
+    -key intermediate/private/$domain.key.pem \
+    -new -sha256 -out intermediate/csr/$domain.csr.pem
+openssl ca -config intermediate/openssl.cnf -extensions server_cert \
+    -days 375 -notext -md sha256 -in intermediate/csr/$domain.csr.pem \
+    -out intermediate/certs/$domain.cert.pem
+    
+echo "Creating the $domain chain file with:"
+echo "cat intermediate/certs/$domain.cert.pem intermediate/certs/ca-chain.cert.pem > intermediate/certs/$domain-chain.pem";
+cat "intermediate/certs/$domain.cert.pem" intermediate/certs/ca-chain.cert.pem > "intermediate/certs/$domain-chain.pem";
+echo "Congratulation ! Your signed certificate for $domain has been created."

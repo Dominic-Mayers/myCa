@@ -1,0 +1,90 @@
+#!/bin/bash
+
+if ! test -d "private" || ! test -d "certs" || ! test -f "index.txt" || ! test -f "serial" || ! test -f "openssl.cnf.orig" || ! test -d "intermediate" ||  ! test -d "intermediate/private" || ! test -d "intermediate/certs" || ! test -f "intermediate/index.txt" || ! test -f "intermediate/serial" || ! test -f "intermediate/openssl.cnf.orig" ; then
+   echo "Directory structure is invalid";
+   exit; 
+fi
+
+rm "index.txt";
+touch "index.txt";
+rm "intermediate/index.txt";
+touch "intermediate/index.txt";
+
+dir=$(pwd);
+
+if ! test -f "openssl.cnf"; then
+   echo "Please copy openssl.cnf.orig to openssl.cnf and adapt it to your need.";
+   echo "In particular, make sure dir = $dir.";
+   exit;
+fi
+
+chmod 700 private;
+
+if ! test -f "private/ca.key.pem"; then
+   echo "Creating private key for root CA using:";
+   echo "openssl genrsa -aes256 -out private/ca.key.pem 4096";
+   openssl genrsa -aes256 -out private/ca.key.pem 4096;
+   echo "chmod 400 private/ca.key.pem";
+   chmod 400 private/ca.key.pem;
+   echo;
+else
+   echo "The private key 'private/ca.key.pem' for root CA already exists";
+   echo;
+fi
+
+if ! test -f "certs/ca.cert.pem"; then
+   echo "Creating the root certificate using:";
+   echo "openssl req -config openssl.cnf -key private/ca.key.pem -new -x509 -days 7300 -sha256 -extensions v3_ca -out certs/ca.cert.pem";
+   openssl req -config openssl.cnf -key private/ca.key.pem -new -x509 -days 7300 -sha256 -extensions v3_ca -out certs/ca.cert.pem
+   echo "chmod 444 certs/ca.cert.pem";
+   chmod 444 certs/ca.cert.pem;
+   echo;
+else
+   echo "The root certificate 'certs/ca.cert.pem' already exists";
+   echo;
+fi
+
+if ! test -f "intermediate/openssl.cnf"; then
+   echo "Please copy intermediate/openssl.cnf.orig to intermediate/openssl.cnf and adapt it to your need.";
+   echo "In particular, make sure dir = $dir/intermediate.";
+   echo "You might want to edit the section [ alt_names ] and uncomment the line before.";
+   exit;
+fi
+
+chmod 700 intermediate/private;
+
+if ! test -f "intermediate/private/intermediate.key.pem"; then
+   echo "Creating the intermediate private key with:";
+   echo "openssl genrsa -aes256 -out intermediate/private/intermediate.key.pem 4096"; 
+   openssl genrsa -aes256 -out intermediate/private/intermediate.key.pem 4096;
+   echo "chmod 400 intermediate/private/intermediate.key.pem"; 
+   chmod 400 intermediate/private/intermediate.key.pem;
+   echo;
+else
+   echo "The intermediate private key 'intermediate/private/intermediate.key.pem' already exists";
+   echo;
+fi
+
+echo "Creating the intermediate certificate.";
+echo "The details should generally match the root CA. The Common Name, however, must be different."
+if ! test -f "intermediate/csr/intermediate.csr.pem"; then
+   echo "First, a certificate signing request (CSR) with:"
+   echo "openssl req -config intermediate/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem"; 
+   openssl req -config intermediate/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem
+   echo;
+else
+   echo "The intermediate CA CSR 'intermediate/csr/intermediate.csr.pem' already exists";
+   echo;   
+fi
+
+echo "Using the root CA to sign the intermediate CSR with:";
+echo "openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem"
+openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
+echo "chmod 444 intermediate/certs/intermediate.cert.pem";
+chmod 444 intermediate/certs/intermediate.cert.pem
+echo;
+
+echo "Creating the certificate chain file with:"
+echo "cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem";
+cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem;
+echo "Congratulation ! Your local root CA and intermediate CA have been created."
