@@ -1,20 +1,25 @@
 #!/bin/bash
 
-if ! test -d "private" || ! test -d "certs" || ! test -f "index.txt" || ! test -f "serial" || ! test -f "openssl.cnf.orig" || ! test -d "intermediate" ||  ! test -d "intermediate/private" || ! test -d "intermediate/certs" || ! test -f "intermediate/index.txt" || ! test -f "intermediate/serial" || ! test -f "intermediate/openssl.cnf.orig" ; then
+if ! test -d "private" || ! test -d "certs" || ! test -f "serial" || ! test -f "openssl.cnf.orig" || ! test -d "intermediate" ||  ! test -d "intermediate/private" || ! test -d "intermediate/certs" || ! test -f "intermediate/serial" || ! test -f "intermediate/openssl.cnf.orig" ; then
    echo "Directory structure is invalid";
    exit; 
 fi
 
-rm "index.txt";
+if test -f  "index.txt"; then
+   rm "index.txt";
+fi
 touch "index.txt";
-rm "intermediate/index.txt";
+
+if test -f  "intermediate/index.txt"; then
+   rm "intermediate/index.txt";
+fi
 touch "intermediate/index.txt";
 
 dir=$(pwd);
 
 if ! test -f "openssl.cnf"; then
    echo "Please copy openssl.cnf.orig to openssl.cnf and adapt it to your need.";
-   echo "In particular, make sure dir = $dir.";
+   echo "In particular, make sure dir = $dir";
    exit;
 fi
 
