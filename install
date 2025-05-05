@@ -9,7 +9,9 @@ if test -f "index.txt" || test -f "serial"; then
    #echo "Warning: Database file(s)  already exist in root folder.";
    #echo "The purpose of these files is to prevent duplicate intermediate certificates or eventually write one over an existing one.";
    if ! test -f "certs/ca.cert.pem"; then
-      echo "There is no root certificate. So the database files are obsolete and reset."
+      echo "There is no root certificate.";
+      echo "So the database files are obsolete and reset."
+      echo;
       resetRootDd=Yes 
    elif ! test -f "intermediate/certs/intermediate.cert.pem"; then
       echo "A root certificate exists. So the root database files might be in use."
@@ -25,7 +27,10 @@ if test -f "index.txt" || test -f "serial"; then
       echo; 
    fi
 else
-   resetRootDd=Yes
+   touch "index.txt";
+   echo  "1000" > "serial";
+   echo  "Root database files initialized.";
+   echo;
 fi
 
 if [ "$resetRootDd" = "Yes" ]; then
@@ -40,8 +45,8 @@ if test -f "intermediate/index.txt"  ||  test -f "intermediate/serial" || test -
    if ! test -f "intermediate/certs/intermediate.cert.pem"; then
       echo "There is no intermediate certificate.";  
       echo "So the intermediate database files are obsolete and reset.";
-      resetIntermediateDd=Yes    
       echo;
+      resetIntermediateDd=Yes    
    else
       echo "An intermediary CA certificate exists. So the intermediate database files might be in use.";
       echo "Yet, it is fine and perhaps you should reset these files, if you have deleted and never published associated signed certificates.";
@@ -50,7 +55,11 @@ if test -f "intermediate/index.txt"  ||  test -f "intermediate/serial" || test -
       echo;
    fi
 else
-   resetIntermediateDd=Yes
+   touch "intermediate/index.txt";
+   echo  "1000" > "intermediate/serial";
+   echo  "1000" > "intermediate/crlnumber";
+   echo  "Intermediate database files initialized.";
+   echo;
 fi
 
 if [ "$resetIntermediateDd" = "Yes" ]; then
