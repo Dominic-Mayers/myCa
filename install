@@ -19,7 +19,7 @@ if test -f "index.txt" || test -f "serial"; then
       echo;
    else
       echo "An intermediate certificate 'intermediate/certs/intermediate.cert.pem' exists."; 
-      echo "We assume you still want to use it and it is tracked in the root database.";
+      echo "We assume you still want to use it and it is validly tracked in the root database.";
       echo "Otherwise, kill the execution, remove it and retry.";
       resetRootDd=No
       echo; 
@@ -133,6 +133,7 @@ if ! test -f "intermediate/certs/intermediate.cert.pem"; then
    echo;
 else
    echo "Info: The intermediate CA certificate 'intermediate/certs/intermediate.cert.pem' already exists.";
+   echo;
    if [ "$newRootCert" = "true" ]; then 
       echo "Warning: The root certificate was renewed and might not match the existing intermediary certificate.";
       echo;
@@ -145,6 +146,6 @@ if [ "$newSignedIntermediateCert" = "true" ] ; then
    cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem;
    echo;
 else
-   echo "No new intermediate certificate. Thus, certificate chain not created or updated.";
+   echo "Info: No new intermediate certificate. Thus, certificate chain not created or updated.";
    echo;
 fi
