@@ -24,6 +24,8 @@ if test -f "index.txt" || test -f "serial"; then
       resetRootDd=No
       echo; 
    fi
+else
+   resetRootDd=Yes
 fi
 
 if [ "$resetRootDd" = "Yes" ]; then
@@ -37,16 +39,18 @@ if test -f "intermediate/index.txt"  ||  test -f "intermediate/serial" || test -
    #echo "The purpose of these files is to prevent duplicate signed certificates or eventually write one over an existing one.";
    if ! test -f "intermediate/certs/intermediate.cert.pem"; then
       echo "There is no intermediate certificate.";  
-      echo "So the intermediate database files are obsolete and reset."
+      echo "So the intermediate database files are obsolete and reset.";
       resetIntermediateDd=Yes    
       echo;
    else
-      echo "An intermediary CA certificate exists. So the intermediate database files might be in use."      
+      echo "An intermediary CA certificate exists. So the intermediate database files might be in use.";
       echo "Yet, it is fine and perhaps you should reset these files, if you have deleted and never published associated signed certificates.";
       read -p "Reset these files (Yes/No) [No]: " resetIntermediateDb 
       resetIntermediateDd=${resetIntermediateDb:-No}
       echo;
    fi
+else
+   resetIntermediateDd=Yes
 fi
 
 if [ "$resetIntermediateDd" = "Yes" ]; then
