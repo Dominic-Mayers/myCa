@@ -19,8 +19,8 @@ if test -f "index.txt" || test -f "serial"; then
       echo;
    else
       echo "An intermediate certificate 'intermediate/certs/intermediate.cert.pem' exists."; 
-      echo "We assume you still want to use it and it is validly tracked in the root database.";
-      echo "Otherwise, kill the execution, remove it and retry.";
+      echo "We assume it is validly tracked in the root database and thus you want to keep the root database files.";
+      echo "Otherwise, kill the execution, remove the intermediate certificate and retry.";
       resetRootDd=No
       echo; 
    fi
