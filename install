@@ -74,13 +74,17 @@ dir=$(pwd);
 if ! test -f "openssl.cnf"; then
    echo "Please copy openssl.cnf.orig to openssl.cnf and adapt it to your need.";
    echo "In particular, make sure dir = $dir";
+   echo "You might want to edit the defaults in the section [ req_distinguished_name ]."
+   echo;
    exit;
 fi
 
 if ! test -f "intermediate/openssl.cnf"; then
    echo "Please copy intermediate/openssl.cnf.orig to intermediate/openssl.cnf and adapt it to your need.";
    echo "In particular, make sure dir = $dir/intermediate.";
-   echo "You might want to uncomment and edit the section [ alt_names ] and uncomment the line before.";
+   echo "You might want to edit the defaults in the section [ req_distinguished_name ]."
+   echo "You might also want to uncomment and edit the section [ alt_names ] and uncomment the line before.";
+   echo;
    exit;
 fi
 
