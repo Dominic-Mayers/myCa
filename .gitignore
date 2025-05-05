@@ -1,0 +1,15 @@
+**/certs/*
+!.gitkeep
+**/newcerts/*
+!.gitkeep
+**/csr/*
+!.gitkeep
+**/private/*
+!.gitkeep
+openssl.cnf
+index.txt
+index.txt.*
+serial
+serial.*
+crlnumber
+crlnumber.*
