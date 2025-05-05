@@ -1,19 +1,60 @@
 #!/bin/bash
 
-if ! test -d "private" || ! test -d "certs" || ! test -f "serial" || ! test -f "openssl.cnf.orig" || ! test -d "intermediate" ||  ! test -d "intermediate/private" || ! test -d "intermediate/certs" || ! test -f "intermediate/serial" || ! test -f "intermediate/openssl.cnf.orig" ; then
+if ! test -d "private" || ! test -d "certs" || ! test -f "openssl.cnf.orig" || ! test -d "intermediate" ||  ! test -d "intermediate/private" || ! test -d "intermediate/certs"  || ! test -f "intermediate/openssl.cnf.orig" ; then
    echo "Directory structure is invalid";
    exit; 
 fi
 
-if test -f  "index.txt"; then
-   rm "index.txt";
+if test -f "index.txt" || test -f "serial"; then
+   #echo "Warning: Database file(s)  already exist in root folder.";
+   #echo "The purpose of these files is to prevent duplicate intermediate certificates or eventually write one over an existing one.";
+   if ! test -f "certs/ca.cert.pem"; then
+      echo "There is no root certificate. So the database files are obsolete and reset."
+      resetRootDd=Yes 
+   elif ! test -f "intermediate/certs/intermediate.cert.pem"; then
+      echo "A root certificate exists. So the root database files might be in use."
+      echo "Yet, it is fine and perhaps you should reset these files, if you have deleted and never published associated intermediate certificates.";
+      read -p "Reset these files (Yes/No) [No]: " resetRootDd 
+      resetRootDd=${resetRootDb:-No}
+      echo;
+   else
+      echo "An intermediate certificate 'intermediate/certs/intermediate.cert.pem' exists."; 
+      echo "We assume you still want to use it and it is tracked in the root database.";
+      echo "Otherwise, kill the execution, remove it and retry.";
+      resetRootDd=No
+      echo; 
+   fi
 fi
-touch "index.txt";
 
-if test -f  "intermediate/index.txt"; then
-   rm "intermediate/index.txt";
+if [ "$resetRootDd" = "Yes" ]; then
+   rm    "index.txt"; 
+   touch "index.txt";
+   echo  "1000" > "serial";
 fi
-touch "intermediate/index.txt";
+
+if test -f "intermediate/index.txt"  ||  test -f "intermediate/serial" || test -f "intermediate/crlnumber" ; then
+   #echo "Warning: Database file(s) or serial file(s) already exist in intermediate folder.";
+   #echo "The purpose of these files is to prevent duplicate signed certificates or eventually write one over an existing one.";
+   if ! test -f "intermediate/certs/intermediate.cert.pem"; then
+      echo "There is no intermediate certificate.";  
+      echo "So the intermediate database files are obsolete and reset."
+      resetIntermediateDd=Yes    
+      echo;
+   else
+      echo "An intermediary CA certificate exists. So the intermediate database files might be in use."      
+      echo "Yet, it is fine and perhaps you should reset these files, if you have deleted and never published associated signed certificates.";
+      read -p "Reset these files (Yes/No) [No]: " resetIntermediateDb 
+      resetIntermediateDd=${resetIntermediateDb:-No}
+      echo;
+   fi
+fi
+
+if [ "$resetIntermediateDd" = "Yes" ]; then
+   rm    "intermediate/index.txt"; 
+   touch "intermediate/index.txt";
+   echo  "1000" > "intermediate/serial";
+   echo  "1000" > "intermediate/crlnumber";
+fi
 
 dir=$(pwd);
 
@@ -23,37 +64,37 @@ if ! test -f "openssl.cnf"; then
    exit;
 fi
 
+if ! test -f "intermediate/openssl.cnf"; then
+   echo "Please copy intermediate/openssl.cnf.orig to intermediate/openssl.cnf and adapt it to your need.";
+   echo "In particular, make sure dir = $dir/intermediate.";
+   echo "You might want to uncomment and edit the section [ alt_names ] and uncomment the line before.";
+   exit;
+fi
+
 chmod 700 private;
 
 if ! test -f "private/ca.key.pem"; then
    echo "Creating private key for root CA using:";
    echo "openssl genrsa -aes256 -out private/ca.key.pem 4096";
    openssl genrsa -aes256 -out private/ca.key.pem 4096;
-   echo "chmod 400 private/ca.key.pem";
    chmod 400 private/ca.key.pem;
    echo;
 else
-   echo "The private key 'private/ca.key.pem' for root CA already exists";
+   echo "Info: The private key 'private/ca.key.pem' for root CA already exists";
    echo;
 fi
 
+newRootCert=false;
 if ! test -f "certs/ca.cert.pem"; then
    echo "Creating the root certificate using:";
    echo "openssl req -config openssl.cnf -key private/ca.key.pem -new -x509 -days 7300 -sha256 -extensions v3_ca -out certs/ca.cert.pem";
    openssl req -config openssl.cnf -key private/ca.key.pem -new -x509 -days 7300 -sha256 -extensions v3_ca -out certs/ca.cert.pem
-   echo "chmod 444 certs/ca.cert.pem";
    chmod 444 certs/ca.cert.pem;
+   newRootCert=true;
    echo;
 else
-   echo "The root certificate 'certs/ca.cert.pem' already exists";
+   echo "Info: The root certificate 'certs/ca.cert.pem' already exists";
    echo;
-fi
-
-if ! test -f "intermediate/openssl.cnf"; then
-   echo "Please copy intermediate/openssl.cnf.orig to intermediate/openssl.cnf and adapt it to your need.";
-   echo "In particular, make sure dir = $dir/intermediate.";
-   echo "You might want to edit the section [ alt_names ] and uncomment the line before.";
-   exit;
 fi
 
 chmod 700 intermediate/private;
@@ -62,34 +103,45 @@ if ! test -f "intermediate/private/intermediate.key.pem"; then
    echo "Creating the intermediate private key with:";
    echo "openssl genrsa -aes256 -out intermediate/private/intermediate.key.pem 4096"; 
    openssl genrsa -aes256 -out intermediate/private/intermediate.key.pem 4096;
-   echo "chmod 400 intermediate/private/intermediate.key.pem"; 
    chmod 400 intermediate/private/intermediate.key.pem;
    echo;
 else
-   echo "The intermediate private key 'intermediate/private/intermediate.key.pem' already exists";
+   echo "Info: The intermediate private key 'intermediate/private/intermediate.key.pem' already exists";
    echo;
 fi
 
-echo "Creating the intermediate certificate.";
-echo "The details should generally match the root CA. The Common Name, however, must be different."
 if ! test -f "intermediate/csr/intermediate.csr.pem"; then
+   echo "Creating the intermediate certificate.";
+   echo "The details should generally match the root CA.";
+   echo "The Common Name, however, must be different.";
    echo "First, a certificate signing request (CSR) with:"
    echo "openssl req -config intermediate/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem"; 
    openssl req -config intermediate/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem
    echo;
 else
-   echo "The intermediate CA CSR 'intermediate/csr/intermediate.csr.pem' already exists";
+   echo "Info: The intermediate CA CSR 'intermediate/csr/intermediate.csr.pem' already exists";
    echo;   
 fi
 
-echo "Using the root CA to sign the intermediate CSR with:";
-echo "openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem"
-openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
-echo "chmod 444 intermediate/certs/intermediate.cert.pem";
-chmod 444 intermediate/certs/intermediate.cert.pem
-echo;
+newSignedIntermediateCert=false;
+if ! test -f "intermediate/certs/intermediate.cert.pem"; then
+   echo "Using the root CA to sign the intermediate CSR with:";
+   echo "openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem"
+   openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
+   chmod 444 intermediate/certs/intermediate.cert.pem;
+   newSignedIntermediateCert=true;
+   echo;
+else
+   echo "Info: The intermediate CA certificate 'intermediate/certs/intermediate.cert.pem' already exists.";
+   if [ "$newRootCert" = "true" ]; then 
+      echo "Warning: The root certificate was renewed and might not match the existing intermediary certificate.";
+      echo;
+   fi
+fi
 
-echo "Creating the certificate chain file with:"
-echo "cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem";
-cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem;
-echo "Congratulation ! Your local root CA and intermediate CA have been created."
+if [ "$newSignedIntermediateCert" = "true" ] ; then
+   echo "Creating the certificate chain file with:";
+   echo "cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem";
+   cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem;
+   echo;
+fi

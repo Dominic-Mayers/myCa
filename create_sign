@@ -18,4 +18,4 @@ openssl ca -config intermediate/openssl.cnf -extensions server_cert \
 echo "Creating the $domain chain file with:"
 echo "cat intermediate/certs/$domain.cert.pem intermediate/certs/ca-chain.cert.pem > intermediate/certs/$domain-chain.pem";
 cat "intermediate/certs/$domain.cert.pem" intermediate/certs/ca-chain.cert.pem > "intermediate/certs/$domain-chain.pem";
-echo "Congratulation ! Your signed certificate for $domain has been created."
+echo;
