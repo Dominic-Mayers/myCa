@@ -144,4 +144,7 @@ if [ "$newSignedIntermediateCert" = "true" ] ; then
    echo "cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem";
    cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem;
    echo;
+else
+   echo "No new intermediate certificate. Thus, certificate chain not created or updated.";
+   echo;
 fi
