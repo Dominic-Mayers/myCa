@@ -10,7 +10,7 @@ if test -f "index.txt" || test -f "serial"; then
    #echo "The purpose of these files is to prevent duplicate intermediate certificates or eventually write one over an existing one.";
    if ! test -f "certs/ca.cert.pem"; then
       echo "There is no root certificate.";
-      echo "So the database files are obsolete and reset."
+      echo "So the root database files are obsolete and reset."
       echo;
       resetRootDd=Yes 
    elif ! test -f "intermediate/certs/intermediate.cert.pem"; then
@@ -72,7 +72,7 @@ fi
 dir=$(pwd);
 
 if ! test -f "openssl.cnf"; then
-   echo "Please copy openssl.cnf.orig to openssl.cnf and adapt it to your need.";
+   echo "Please copy openssl.cnf.orig to openssl.cnf, adapt it to your need and retry.";
    echo "In particular, make sure dir = $dir";
    echo "You might want to edit the defaults in the section [ req_distinguished_name ]."
    echo;
@@ -80,7 +80,7 @@ if ! test -f "openssl.cnf"; then
 fi
 
 if ! test -f "intermediate/openssl.cnf"; then
-   echo "Please copy intermediate/openssl.cnf.orig to intermediate/openssl.cnf and adapt it to your need.";
+   echo "Please copy intermediate/openssl.cnf.orig to intermediate/openssl.cnf, adapt it to your need and retry.";
    echo "In particular, make sure dir = $dir/intermediate.";
    echo "You might want to edit the defaults in the section [ req_distinguished_name ]."
    echo "You might also want to uncomment and edit the section [ alt_names ] and uncomment the line before.";
